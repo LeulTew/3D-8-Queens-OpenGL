@@ -29,3 +29,7 @@ Thumbs.db
 
 # High score file
 resources/highscore.txt
+
+# FreeType library files
+freetype-2.10.1/
+*.deb
