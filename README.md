@@ -400,7 +400,7 @@ make deps  # Linux
 
 **Experience the 8-Queens puzzle like never before!**
 
-[![Play Now](https://img.shields.io/badge/🎮_Play_Now-Launch_Game-FF6B6B?style=for-the-badge)](make run)
+[![Play Now](https://img.shields.io/badge/🎮_Play_Now-Launch_Game-FF6B6B?style=for-the-badge)](#getting-started)
 
 ### Connect With Us
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github)](https://github.com/LeulTew/3D-8-Queens-OpenGL)
