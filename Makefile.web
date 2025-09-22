@@ -9,6 +9,7 @@ OUTPUT=index.html
 # Emscripten flags
 EMFLAGS= \
 	-s LEGACY_GL_EMULATION=1 \
+	-s GL_UNSAFE_OPTS=0 \
 	-s WASM=1 \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
