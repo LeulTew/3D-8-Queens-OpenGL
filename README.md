@@ -34,7 +34,7 @@
 
 <div align="center">
 
-![3D Chessboard](https://via.placeholder.com/800x400/2d3748/ffffff?text=3D+Chessboard+Preview)
+![3D Chessboard](screenshots/game-preview.png)
 *Screenshot of the immersive 3D chessboard environment*
 
 </div>
@@ -220,6 +220,8 @@ make && make run
 ├── 📄 Makefile                 # Linux build automation
 ├── 📄 build.ps1               # Windows build script
 ├── 📄 .gitignore              # Git ignore rules
+├── 📁 screenshots/            # Game screenshots for README
+│   └── 🖼️ game-preview.png    # Main game screenshot
 ├── 📁 resources/              # Game assets
 │   ├── 🎨 chessboard.jpg      # Chessboard texture
 │   ├── 🎨 wood.jpg            # Table surface
