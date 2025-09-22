@@ -1,0 +1,31 @@
+# Build outputs
+main
+*.o
+*.exe
+*.out
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# Dependencies (if any)
+# Add specific ignores for libraries if needed
+
+# Sound files (optional, if not to include)
+# resources/*.wav
+
+# High score file
+resources/highscore.txt
