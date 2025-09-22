@@ -1,7 +1,7 @@
 EMCC=emcc
 
 # Source files
-SOURCES=main.cpp tiny_obj_loader.cc
+SOURCES=main.cpp
 
 # Output files
 OUTPUT=index.html

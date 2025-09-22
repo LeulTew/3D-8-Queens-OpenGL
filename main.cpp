@@ -160,6 +160,7 @@ int main(int argc, char **argv)
     loadHighScore();
 
     glEnable(GL_DEPTH_TEST);
+#ifndef __EMSCRIPTEN__
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
@@ -178,6 +179,7 @@ int main(int argc, char **argv)
     GLfloat light2_diffuse[] = {1.0, 0.5, 0.5, 1.0};
     glLightfv(GL_LIGHT2, GL_POSITION, light2_position);
     glLightfv(GL_LIGHT2, GL_DIFFUSE, light2_diffuse);
+#endif
 
     loadTextures();
     if (!loadQueenModel())
@@ -383,7 +385,9 @@ void display()
 
 void drawRoom()
 {
+#ifndef __EMSCRIPTEN__
     glDisable(GL_LIGHTING);
+#endif
     glDisable(GL_DEPTH_TEST);
 
     // Floor: Refined marble tiles for a sleek modern look
@@ -570,7 +574,9 @@ void drawRoom()
     }
 
     glEnable(GL_DEPTH_TEST);
+#ifndef __EMSCRIPTEN__
     glEnable(GL_LIGHTING);
+#endif
 }
 
 void reshape(int w, int h)
@@ -728,6 +734,7 @@ void drawChessboard()
     glEnable(GL_TEXTURE_2D);
 #endif
     glBindTexture(GL_TEXTURE_2D, chessboardTexture);
+    glColor3f(1.0f, 1.0f, 1.0f);
 
     glPushMatrix();
     glTranslatef(-BOARD_SIZE * SQUARE_SIZE / 2, tableTopHeight + 0.12f, -BOARD_SIZE * SQUARE_SIZE / 2); // Adjust height
@@ -773,8 +780,12 @@ void drawQueen(float x, float y, float z)
 #endif
 
     // Set the color to white
+#ifdef __EMSCRIPTEN__
+    glColor3f(1.0f, 1.0f, 1.0f);
+#else
     GLfloat material_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, material_color);
+#endif
 
     // Draw the queen model
     for (size_t i = 0; i < queenShapes.size(); i++)
@@ -1117,7 +1128,9 @@ void renderBitmapString(float x, float y, float z, void *font, const char *strin
 // drawGuide function
 void drawGuide()
 {
+#ifndef __EMSCRIPTEN__
     glDisable(GL_LIGHTING);
+#endif
     glColor3f(0.0f, 1.0f, 1.0f); // Bright cyan color
 
     std::string guideText[] = {
@@ -1149,7 +1162,9 @@ void drawGuide()
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
 
+#ifndef __EMSCRIPTEN__
     glEnable(GL_LIGHTING);
+#endif
 }
 
 void drawScore()
@@ -1184,7 +1199,9 @@ void drawScore()
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
 
+#ifndef __EMSCRIPTEN__
     glEnable(GL_LIGHTING);
+#endif
 }
 
 // Load Textures Function
@@ -1331,6 +1348,7 @@ void drawTable()
     glEnable(GL_TEXTURE_2D);
 #endif
     glBindTexture(GL_TEXTURE_2D, tableTexture);
+    glColor3f(1.0f, 1.0f, 1.0f);
 
     // Draw table top as a thicker rectangular box
     glPushMatrix();
@@ -1502,6 +1520,7 @@ void drawGroundPlane()
     glEnable(GL_TEXTURE_2D);
 #endif
     glBindTexture(GL_TEXTURE_2D, groundTexture);
+    glColor3f(1.0f, 1.0f, 1.0f);
 
     float groundSize = 50.0f;
     float repeatFactor = groundSize / 2.0f; // Adjust this to control the tiling
