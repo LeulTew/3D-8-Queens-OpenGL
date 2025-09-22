@@ -18,6 +18,7 @@
 #include <fstream>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 #ifdef __EMSCRIPTEN__
@@ -655,13 +656,13 @@ void mouse(int button, int state, int x, int y)
     if (button == GLUT_LEFT_BUTTON && state == GLUT_UP && !isRotating)
     {
         GLint viewport[4];
-        GLfloat modelview[16], projection[16];
+        GLdouble modelview[16], projection[16];
         GLfloat winX, winY, winZ;
         GLdouble posX, posY, posZ;
 
         glGetIntegerv(GL_VIEWPORT, viewport);
-        glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
-        glGetFloatv(GL_PROJECTION_MATRIX, projection);
+        glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+        glGetDoublev(GL_PROJECTION_MATRIX, projection);
 
         winX = (float)x;
         winY = (float)viewport[3] - (float)y;
@@ -881,7 +882,7 @@ void loadWAV(const char *filename, std::vector<uint8_t> &soundData, ALsizei &siz
     }
 
     // Check WAV format
-    if (std::strncmp(header, "RIFF", 4) != 0 || std::strncmp(header + 8, "WAVE", 4) != 0)
+    if (strncmp(header, "RIFF", 4) != 0 || strncmp(header + 8, "WAVE", 4) != 0)
     {
         std::cerr << "Invalid WAV file format" << std::endl;
         return;
