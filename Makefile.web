@@ -1,0 +1,31 @@
+EMCC=emcc
+
+# Source files
+SOURCES=main.cpp tiny_obj_loader.cc
+
+# Output files
+OUTPUT=index.html
+
+# Emscripten flags
+EMFLAGS= \
+	-s LEGACY_GL_EMULATION=1 \
+	-s WASM=1 \
+	-s ALLOW_MEMORY_GROWTH=1 \
+	-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
+	-s EXPORTED_FUNCTIONS='["_main"]' \
+	--preload-file resources@/resources \
+	--use-preload-plugins \
+	-I. \
+	-std=c++11 \
+	-O2 \
+	-lopenal
+
+# Build target
+$(OUTPUT): $(SOURCES)
+	$(EMCC) $(SOURCES) $(EMFLAGS) -o $(OUTPUT)
+
+# Clean target
+clean:
+	rm -f $(OUTPUT) *.wasm *.data
+
+.PHONY: clean

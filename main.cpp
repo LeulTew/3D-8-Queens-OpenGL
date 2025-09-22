@@ -1,4 +1,12 @@
+#ifndef __EMSCRIPTEN__
 #include <GL/glut.h>
+#endif
+#ifdef __EMSCRIPTEN__
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <cstdint>
@@ -10,8 +18,31 @@
 #include <fstream>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
+
+#ifdef __EMSCRIPTEN__
+#define GLUT_DOWN 0
+#define GLUT_UP 1
+#define GLUT_LEFT_BUTTON 0
+#endif
+
+#ifdef __EMSCRIPTEN__
+void main_loop();
+EM_BOOL mouse_callback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData);
+EM_BOOL motion_callback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData);
+EM_BOOL keyboard_callback(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData);
+void animateQueenCallback(void *userData);
+#endif
+
+// Helper function for elapsed time
+double getElapsedTime()
+{
+#ifdef __EMSCRIPTEN__
+    return emscripten_get_now();
+#else
+    return glutGet(GLUT_ELAPSED_TIME);
+#endif
+}
 
 // Store the texture IDs separately
 std::vector<GLuint> queenTextures;
@@ -125,20 +156,7 @@ int main(int argc, char **argv)
     // Initialize OpenAL
     initOpenAL();
 
-    glutInit(&argc, argv);
-
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE); // Enable anti-aliasing GLUT_MULTISAMPLE
-    glEnable(GL_MULTISAMPLE);
-
-    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-    glutCreateWindow("3D 8-Queen Chess");
-
     loadHighScore();
-    glutDisplayFunc(display);
-    glutReshapeFunc(reshape);
-    glutKeyboardFunc(keyboard);
-    glutMouseFunc(mouse);
-    glutMotionFunc(motion);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
@@ -168,13 +186,83 @@ int main(int argc, char **argv)
         return 1;
     }
 
+#ifdef __EMSCRIPTEN__
+    // Emscripten-specific initialization
+    EmscriptenWebGLContextAttributes attrs;
+    emscripten_webgl_init_context_attributes(&attrs);
+    attrs.majorVersion = 2;
+    attrs.minorVersion = 0;
+    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context = emscripten_webgl_create_context("#canvas", &attrs);
+    emscripten_webgl_make_context_current(context);
+
+    // Set up canvas size
+    emscripten_set_canvas_element_size("#canvas", WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    // Set up input callbacks
+    emscripten_set_mousedown_callback("#canvas", nullptr, EM_TRUE, mouse_callback);
+    emscripten_set_mousemove_callback("#canvas", nullptr, EM_TRUE, motion_callback);
+    emscripten_set_keydown_callback("#canvas", nullptr, EM_TRUE, keyboard_callback);
+
+    // Set up main loop
+    emscripten_set_main_loop(main_loop, 0, 1);
+#else
+    glutInit(&argc, argv);
+
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE); // Enable anti-aliasing GLUT_MULTISAMPLE
+    glEnable(GL_MULTISAMPLE);
+
+    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glutCreateWindow("3D 8-Queen Chess");
+
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutKeyboardFunc(keyboard);
+    glutMouseFunc(mouse);
+    glutMotionFunc(motion);
+
     glutMainLoop();
+#endif
 
     // Cleanup OpenAL resources
     cleanupOpenAL();
 
     return 0;
 }
+
+#ifdef __EMSCRIPTEN__
+void main_loop()
+{
+    display();
+}
+
+EM_BOOL mouse_callback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData)
+{
+    if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN)
+    {
+        mouse(mouseEvent->button, GLUT_DOWN, mouseEvent->targetX, mouseEvent->targetY);
+    }
+    else if (eventType == EMSCRIPTEN_EVENT_MOUSEUP)
+    {
+        mouse(mouseEvent->button, GLUT_UP, mouseEvent->targetX, mouseEvent->targetY);
+    }
+    return EM_TRUE;
+}
+
+EM_BOOL motion_callback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData)
+{
+    motion(mouseEvent->targetX, mouseEvent->targetY);
+    return EM_TRUE;
+}
+
+EM_BOOL keyboard_callback(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData)
+{
+    if (eventType == EMSCRIPTEN_EVENT_KEYDOWN)
+    {
+        keyboard(keyEvent->key[0], 0, 0);
+    }
+    return EM_TRUE;
+}
+#endif
 
 void display()
 {
@@ -198,7 +286,9 @@ void display()
     drawGroundPlane();
     drawTable();
     drawChessboard();
+#ifndef __EMSCRIPTEN__
     drawGuide();
+#endif
 
     // Draw queens
     for (size_t i = 0; i < queens.size(); ++i)
@@ -211,7 +301,7 @@ void display()
     // Draw animated queen if animating
     if (isAnimating)
     {
-        float currentTime = glutGet(GLUT_ELAPSED_TIME);
+        float currentTime = getElapsedTime();
         float t = (currentTime - animationStartTime) / ANIMATION_DURATION;
         t = std::min(t, 1.0f);
 
@@ -227,7 +317,9 @@ void display()
         drawQueen(x, y, z);
     }
 
+#ifndef __EMSCRIPTEN__
     drawScore();
+#endif
 
     if (isSolving)
     {
@@ -240,15 +332,18 @@ void display()
         }
 
         // Display "Solving..." message
+#ifndef __EMSCRIPTEN__
         glDisable(GL_LIGHTING);
         glDisable(GL_TEXTURE_2D);
         glColor3f(0.0f, 0.5f, 1.0f);
         renderBitmapString(-1.0f, tableTopHeight + 2 * SQUARE_SIZE, 0.0f, GLUT_BITMAP_HELVETICA_18, "Solving...");
         glEnable(GL_LIGHTING);
         glEnable(GL_TEXTURE_2D);
+#endif
     }
     else if (gameWon)
     {
+#ifndef __EMSCRIPTEN__
         float messageX = -1.0f;
         float messageY = tableTopHeight + 2 * SQUARE_SIZE;
         glDisable(GL_LIGHTING);
@@ -257,19 +352,22 @@ void display()
         renderBitmapString(messageX, messageY, 0.0f, GLUT_BITMAP_HELVETICA_18, "Congratulations! You solved the 8-queen puzzle!");
         glEnable(GL_LIGHTING);
         glEnable(GL_TEXTURE_2D);
+#endif
     }
 
     if (showTryAgainWarning)
     {
-        int currentTime = glutGet(GLUT_ELAPSED_TIME);
+        double currentTime = getElapsedTime();
         if (currentTime - tryAgainTimer < 2000)
         {
+#ifndef __EMSCRIPTEN__
             glDisable(GL_LIGHTING);
             glDisable(GL_TEXTURE_2D);
             glColor3f(1.0f, 0.0f, 0.0f);
             renderBitmapString(-1.6f, tableTopHeight + thickness + 0.5f, 0.0f, GLUT_BITMAP_HELVETICA_18, "Invalid move. Try again.");
             glEnable(GL_LIGHTING);
             glEnable(GL_TEXTURE_2D);
+#endif
         }
         else
         {
@@ -277,7 +375,9 @@ void display()
         }
     }
 
+#ifndef __EMSCRIPTEN__
     glutSwapBuffers();
+#endif
 }
 
 void drawRoom()
@@ -431,9 +531,40 @@ void drawRoom()
     for (float x = -8.0f; x <= 8.0f; x += 8.0f)
     {
         glPushMatrix();
-        glTranslatef(x, 0.0f, 10.0f);
-        GLUquadric *quadric = gluNewQuadric();
-        gluCylinder(quadric, 0.3f, 0.3f, 5.0f, 32, 32); // Pillar height and width
+        glTranslatef(x, 2.5f, 10.0f);
+        glScalef(0.3f, 5.0f, 0.3f);
+        glBegin(GL_QUADS);
+        // Front face
+        glVertex3f(-0.5f, -0.5f, 0.5f);
+        glVertex3f(0.5f, -0.5f, 0.5f);
+        glVertex3f(0.5f, 0.5f, 0.5f);
+        glVertex3f(-0.5f, 0.5f, 0.5f);
+        // Back face
+        glVertex3f(-0.5f, -0.5f, -0.5f);
+        glVertex3f(0.5f, -0.5f, -0.5f);
+        glVertex3f(0.5f, 0.5f, -0.5f);
+        glVertex3f(-0.5f, 0.5f, -0.5f);
+        // Left face
+        glVertex3f(-0.5f, -0.5f, -0.5f);
+        glVertex3f(-0.5f, -0.5f, 0.5f);
+        glVertex3f(-0.5f, 0.5f, 0.5f);
+        glVertex3f(-0.5f, 0.5f, -0.5f);
+        // Right face
+        glVertex3f(0.5f, -0.5f, -0.5f);
+        glVertex3f(0.5f, -0.5f, 0.5f);
+        glVertex3f(0.5f, 0.5f, 0.5f);
+        glVertex3f(0.5f, 0.5f, -0.5f);
+        // Top face
+        glVertex3f(-0.5f, 0.5f, -0.5f);
+        glVertex3f(0.5f, 0.5f, -0.5f);
+        glVertex3f(0.5f, 0.5f, 0.5f);
+        glVertex3f(-0.5f, 0.5f, 0.5f);
+        // Bottom face
+        glVertex3f(-0.5f, -0.5f, -0.5f);
+        glVertex3f(0.5f, -0.5f, -0.5f);
+        glVertex3f(0.5f, -0.5f, 0.5f);
+        glVertex3f(-0.5f, -0.5f, 0.5f);
+        glEnd();
         glPopMatrix();
     }
 
@@ -463,7 +594,9 @@ void resetBoard()
     isRotating = false;
     isAnimating = false;     // Stop any ongoing animation
     loadHighScore();         // Load high score when the board is reset
+#ifndef __EMSCRIPTEN__
     glutPostRedisplay();     // Redraw the scene
+#endif
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -484,7 +617,9 @@ void keyboard(unsigned char key, int x, int y)
             queens.pop_back();
             undoStack.pop_back();
             gameWon = false;
+#ifndef __EMSCRIPTEN__
             glutPostRedisplay();
+#endif
         }
         break;
     case 's':
@@ -495,7 +630,9 @@ void keyboard(unsigned char key, int x, int y)
         }
         break;
     }
+#ifndef __EMSCRIPTEN__
     glutPostRedisplay();
+#endif
 }
 
 void mouse(int button, int state, int x, int y)
@@ -514,16 +651,17 @@ void mouse(int button, int state, int x, int y)
             isRotating = false;
         }
     }
+#ifndef __EMSCRIPTEN__
     if (button == GLUT_LEFT_BUTTON && state == GLUT_UP && !isRotating)
     {
         GLint viewport[4];
-        GLdouble modelview[16], projection[16];
+        GLfloat modelview[16], projection[16];
         GLfloat winX, winY, winZ;
         GLdouble posX, posY, posZ;
 
         glGetIntegerv(GL_VIEWPORT, viewport);
-        glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-        glGetDoublev(GL_PROJECTION_MATRIX, projection);
+        glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
+        glGetFloatv(GL_PROJECTION_MATRIX, projection);
 
         winX = (float)x;
         winY = (float)viewport[3] - (float)y;
@@ -549,11 +687,14 @@ void mouse(int button, int state, int x, int y)
                 numberOfTries++; // Increment the number of tries on invalid move
                 std::cout << "Invalid move. Try again." << std::endl;
                 showTryAgainWarning = true;
-                tryAgainTimer = glutGet(GLUT_ELAPSED_TIME);
+                tryAgainTimer = getElapsedTime();
             }
         }
     }
+#endif
+#ifndef __EMSCRIPTEN__
     glutPostRedisplay();
+#endif
 }
 
 void motion(int x, int y)
@@ -574,7 +715,9 @@ void motion(int x, int y)
         lastMouseX = x;
         lastMouseY = y;
 
+#ifndef __EMSCRIPTEN__
         glutPostRedisplay();
+#endif
     }
 }
 
@@ -821,17 +964,23 @@ void placeQueen(int row, int col)
 
     // Start animation
     isAnimating = true;
-    animationStartTime = glutGet(GLUT_ELAPSED_TIME);
+    animationStartTime = getElapsedTime();
     animationStartPos = queens.empty() ? std::make_pair(row, col) : queens.back();
     animationEndPos = std::make_pair(row, col);
 
     // The queen will be added to the queens vector after the animation completes
 
     undoStack.push_back({row, col});
+#ifndef __EMSCRIPTEN__
     glutPostRedisplay();
+#endif
 
     // Start the animation timer
+#ifdef __EMSCRIPTEN__
+    animateQueen(0);
+#else
     glutTimerFunc(16, animateQueen, 0); // 60 FPS
+#endif
 
     // Play queen placed sound effect
     playPlacementSound();
@@ -858,7 +1007,7 @@ void cleanupOpenAL()
 
 void animateQueen(int value)
 {
-    float currentTime = glutGet(GLUT_ELAPSED_TIME);
+    float currentTime = getElapsedTime();
     float t = (currentTime - animationStartTime) / ANIMATION_DURATION;
 
     if (t >= 1.0f)
@@ -890,20 +1039,70 @@ void animateQueen(int value)
     else
     {
         // Continue animation
+#ifdef __EMSCRIPTEN__
+        emscripten_set_timeout(animateQueenCallback, 16, nullptr);
+#else
         glutTimerFunc(16, animateQueen, 0);
+#endif
     }
 
+#ifndef __EMSCRIPTEN__
     glutPostRedisplay();
+#endif
 }
+
+#ifdef __EMSCRIPTEN__
+void animateQueenCallback(void *userData)
+{
+    float currentTime = getElapsedTime();
+    float t = (currentTime - animationStartTime) / ANIMATION_DURATION;
+
+    if (t >= 1.0f)
+    {
+        // Animation complete
+        isAnimating = false;
+        queens.push_back(animationEndPos);
+
+        if (queens.size() == 8)
+        {
+            gameWon = true;
+            if (!isComputerSolved) // Only update high score if not solved by computer
+            {
+                if (numberOfTries < highScore || highScore == 0)
+                {
+                    highScore = numberOfTries;
+                    saveHighScore();
+                }
+            }
+            isComputerSolved = false; // Reset for the next game
+            // Play win sound
+            if (!winSoundPlayed)
+            {
+                playWinSound();
+                winSoundPlayed = true;
+            }
+        }
+    }
+    else
+    {
+        // Continue animation
+        animateQueen(0);
+    }
+
+    // Redisplay is handled in main loop
+}
+#endif
 
 void renderBitmapString(float x, float y, float z, void *font, const char *string)
 {
+#ifndef __EMSCRIPTEN__
     const char *c;
     glRasterPos3f(x, y, z);
     for (c = string; *c != '\0'; c++)
     {
         glutBitmapCharacter(font, *c);
     }
+#endif
 }
 
 // drawGuide function
@@ -930,7 +1129,9 @@ void drawGuide()
     int yOffset = 20;
     for (const auto &line : guideText)
     {
+#ifndef __EMSCRIPTEN__
         renderBitmapString(10, WINDOW_HEIGHT - yOffset, 0, GLUT_BITMAP_HELVETICA_18, line.c_str());
+#endif
         yOffset += 20;
     }
 
@@ -950,7 +1151,9 @@ void drawScore()
 
     glDisable(GL_LIGHTING);
     glColor3f(1.0f, 1.0f, 0.2f); //  color for the score
+#ifndef __EMSCRIPTEN__
     renderBitmapString(-1.6f, tableTopHeight + thickness + 0.3f, 0.0f, GLUT_BITMAP_HELVETICA_18, scoreText.str().c_str());
+#endif
 
     // Display high score at the top right
     glPushMatrix();
@@ -963,7 +1166,9 @@ void drawScore()
 
     glColor3f(0.5f, 1.0f, 0.2f); // color for the high score
     std::string highScoreText = "Best Score: " + std::to_string(highScore);
+#ifndef __EMSCRIPTEN__
     renderBitmapString(WINDOW_WIDTH - 150, WINDOW_HEIGHT - 20, 0.0f, GLUT_BITMAP_HELVETICA_18, highScoreText.c_str());
+#endif
 
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
@@ -980,17 +1185,19 @@ void loadTextures()
     unsigned char *data;
 
     // Chessboard Texture
-    if (!fileExists("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/chessboard.jpg"))
+    if (!fileExists("resources/chessboard.jpg"))
     {
         std::cerr << "Chessboard texture file not found!" << std::endl;
         return;
     }
     glGenTextures(1, &chessboardTexture);
     glBindTexture(GL_TEXTURE_2D, chessboardTexture);
-    data = stbi_load("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/chessboard.jpg", &width, &height, &nrChannels, 0);
+    data = stbi_load("resources/chessboard.jpg", &width, &height, &nrChannels, 0);
     if (data)
     {
-        gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
     else
     {
@@ -999,17 +1206,19 @@ void loadTextures()
     stbi_image_free(data);
 
     // Table Texture
-    if (!fileExists("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/wood.jpg"))
+    if (!fileExists("resources/wood.jpg"))
     {
         std::cerr << "Table texture file not found!" << std::endl;
         return;
     }
     glGenTextures(1, &tableTexture);
     glBindTexture(GL_TEXTURE_2D, tableTexture);
-    data = stbi_load("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/wood.jpg", &width, &height, &nrChannels, 0);
+    data = stbi_load("resources/wood.jpg", &width, &height, &nrChannels, 0);
     if (data)
     {
-        gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
     else
     {
@@ -1018,36 +1227,19 @@ void loadTextures()
     stbi_image_free(data);
 
     // Ground Texture
-    if (!fileExists("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/ground.jpg"))
+    if (!fileExists("resources/ground.jpg"))
     {
         std::cerr << "Ground texture file not found!" << std::endl;
         return;
     }
     glGenTextures(1, &groundTexture);
     glBindTexture(GL_TEXTURE_2D, groundTexture);
-    data = stbi_load("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/ground.jpg", &width, &height, &nrChannels, 0);
+    data = stbi_load("resources/ground.jpg", &width, &height, &nrChannels, 0);
     if (data)
     {
-        gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
-    }
-    else
-    {
-        std::cerr << "Failed to load ground texture" << std::endl;
-    }
-    stbi_image_free(data);
-
-    // Ground Texture
-    if (!fileExists("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/ground.jpg"))
-    {
-        std::cerr << "Ground texture file not found!" << std::endl;
-        return;
-    }
-    glGenTextures(1, &groundTexture);
-    glBindTexture(GL_TEXTURE_2D, groundTexture);
-    data = stbi_load("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/ground.jpg", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
     else
     {
@@ -1060,8 +1252,8 @@ void loadTextures()
 bool loadQueenModel()
 {
     // Path to the model and material files
-    std::string inputfile = "/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/Queen/Queen_Chess_Piece_0825091405.obj";
-    std::string mtlBaseDir = "/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/Queen/";
+    std::string inputfile = "resources/Queen/Queen_Chess_Piece_0825091405.obj";
+    std::string mtlBaseDir = "resources/Queen/";
 
     std::string err, warn;
     // Load the model and materials
@@ -1104,12 +1296,11 @@ bool loadQueenModel()
                 GLenum format = (nrChannels == 3) ? GL_RGB : GL_RGBA;
                 // Load texture data
                 glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-                gluBuild2DMipmaps(GL_TEXTURE_2D, (nrChannels == 3 ? GL_RGB : GL_RGBA), width, height, (nrChannels == 3 ? GL_RGB : GL_RGBA), GL_UNSIGNED_BYTE, data);
 
                 // Set texture parameters
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
                 stbi_image_free(data);
@@ -1346,7 +1537,7 @@ bool isValidMove(int row, int col)
 //  Function to load high score from a file
 void loadHighScore()
 {
-    std::ifstream inputFile("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/highscore.txt");
+    std::ifstream inputFile("resources/highscore.txt");
     if (inputFile.is_open())
     {
         inputFile >> highScore;
@@ -1361,7 +1552,7 @@ void loadHighScore()
 // Function to save high score to a file
 void saveHighScore()
 {
-    std::ofstream outputFile("/mnt/c/Users/Leul/Downloads/Telegram Desktop/Senior/Sem 1/CS489 - CG/Proj/8 Queen 6.0/resources/highscore.txt");
+    std::ofstream outputFile("resources/highscore.txt");
     if (outputFile.is_open())
     {
         outputFile << highScore;
@@ -1410,7 +1601,9 @@ void autoSolve()
     }
 
     isSolving = false;
+#ifndef __EMSCRIPTEN__
     glutPostRedisplay();
+#endif
 }
 
 void highlightSquare(int row, int col)

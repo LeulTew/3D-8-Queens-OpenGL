@@ -24,6 +24,9 @@ Thumbs.db
 # Dependencies (if any)
 # Add specific ignores for libraries if needed
 
+# Emscripten SDK
+emsdk/
+
 # Sound files (optional, if not to include)
 # resources/*.wav
 

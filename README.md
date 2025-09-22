@@ -1,12 +1,45 @@
 # 🎯 3D 8-Queens Puzzle Game
 
-<div align="center">
+<div align=## 🚀 Quick Start
 
-![Game Preview](https://img.shields.io/badge/Status-Complete-success?style=for-the-badge)
+### Prerequisites Check
+- **C++ Compiler** (GCC/MinGW/Clang)
+- **OpenGL** development libraries
+- **OpenAL** audio library
+- **FreeType** font rendering
+
+### One-Command Setup & Run
+```bash
+# Linux
+make && make run
+
+# Windows (PowerShell)
+.\build.ps1
+```
+
+### 🌐 Web Version (Bro### � Planned Features
+- [ ] **👥 Multiplayer** - Online competitive mode
+- [ ] **📱 Mobile App** - iOS/Android versions
+- [ ] **🎨 Themes** - Multiple visual themes
+- [ ] **📊 Statistics** - Detailed performance analytics
+- [ ] **🎵 Soundtrack** - Background music
+- [ ] **💾 Save States** - Resume interrupted games
+- [ ] **🏆 Leaderboards** - Global high scores)
+```bash
+# Build web version
+make -f Makefile.web
+
+# Open index.html in your browser
+# Or host on GitHub Pages for free online play
+```
+
+**Note**: Web version supports view rotation and auto-solve. Mouse placement is disabled due to browser limitations.
+
+--- Preview](https://img.shields.io/badge/Status-Complete-success?style=for-the-badge)
 ![Language](https://img.shields.io/badge/C%2B%2B-17-blue?style=for-the-badge)
 ![Graphics](https://img.shields.io/badge/OpenGL-3D-green?style=for-the-badge)
 ![Audio](https://img.shields.io/badge/OpenAL-3D-orange?style=for-the-badge)
-![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-lightgrey?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20Web-lightgrey?style=for-the-badge)
 
 **A breathtaking 3D implementation of the classic 8-Queens puzzle**  
 *Immersive graphics • Interactive gameplay • Spatial audio • Auto-solve algorithm*
@@ -322,6 +355,7 @@ Place **8 queens** on the chessboard so that:
 - [ ] **🏆 Leaderboards** - Global high scores
 
 ### 🔄 Recent Updates
+- ✅ **🌐 Web Version** - Emscripten port for browser play
 - ✅ **Dual Audio Sources** - Fixed sound conflicts
 - ✅ **Cross-Platform** - Linux & Windows support
 - ✅ **Auto-Solve** - Backtracking algorithm
