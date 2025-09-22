@@ -723,7 +723,9 @@ void motion(int x, int y)
 
 void drawChessboard()
 {
+#ifndef __EMSCRIPTEN__
     glEnable(GL_TEXTURE_2D);
+#endif
     glBindTexture(GL_TEXTURE_2D, chessboardTexture);
 
     glPushMatrix();
@@ -744,7 +746,9 @@ void drawChessboard()
 
     glPopMatrix();
 
+#ifndef __EMSCRIPTEN__
     glDisable(GL_TEXTURE_2D);
+#endif
 }
 
 // Function to draw the queen model
@@ -763,7 +767,9 @@ void drawQueen(float x, float y, float z)
     }
 
     // Enable texture mapping
+#ifndef __EMSCRIPTEN__
     glEnable(GL_TEXTURE_2D);
+#endif
 
     // Set the color to white
     GLfloat material_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -799,7 +805,9 @@ void drawQueen(float x, float y, float z)
         glEnd();
     }
 
+#ifndef __EMSCRIPTEN__
     glDisable(GL_TEXTURE_2D);
+#endif
 
     glPopMatrix();
 }
@@ -1318,7 +1326,9 @@ bool loadQueenModel()
 
 void drawTable()
 {
+#ifndef __EMSCRIPTEN__
     glEnable(GL_TEXTURE_2D);
+#endif
     glBindTexture(GL_TEXTURE_2D, tableTexture);
 
     // Draw table top as a thicker rectangular box
@@ -1487,7 +1497,9 @@ void drawTable()
 
 void drawGroundPlane()
 {
+#ifndef __EMSCRIPTEN__
     glEnable(GL_TEXTURE_2D);
+#endif
     glBindTexture(GL_TEXTURE_2D, groundTexture);
 
     float groundSize = 50.0f;
@@ -1509,7 +1521,9 @@ void drawGroundPlane()
     glEnd();
     glPopMatrix();
 
+#ifndef __EMSCRIPTEN__
     glDisable(GL_TEXTURE_2D);
+#endif
 }
 
 bool fileExists(const std::string &filename)
